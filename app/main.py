@@ -52,4 +52,11 @@ async def websocket_endpoint(websocket: WebSocket, room: str, username: Optional
         # cleanup
         await manager.disconnect(room, websocket)
         leave_msg = ChatMessage(type="leave", username=username, content=f"{username} left", timstamp=datetime.utcnow())
+        await manager.broadcast(room, leave_msg.dict())
+    except Exception as exc:
+        # log and disconnect for any expected error
+        await manager.disconnect(room, websocket)
+        # optionally broadcast an error message
+        err = ChatMessage(type="error", username="server", content=str(exc), timestamp=datetime.utcnow())
+        await manager.broadcast(room, err.dict())
 
