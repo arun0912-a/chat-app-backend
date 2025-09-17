@@ -1,20 +1,243 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Chat Client</title>
+    <style>
+        :root {
+            --bg: #f5f7fa;
+            --text: #111;
+            --header-bg: #4f46e5;
+            --header-text: #fff;
+            --bubble-bg: #f3f4f6;
+            --bubble-me-bg: #dbeafe;
+            --meta-text: #555;
+        }
+
+        body.dark {
+            --bg: #1f2937;
+            --text: #f3f4f6;
+            --header-bg: #111827;
+            --header-text: #e5e7eb;
+            --bubble-bg: #374151;
+            --bubble-me-bg: #2563eb;
+            --meta-text: #9ca3af;
+        }
+
+        body {
+            font-family: "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        header {
+            background: var(--header-bg);
+            color: var(--header-text);
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            position: relative;
+        }
+
+        #toggle-theme {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            padding: 0.3rem 0.6rem;
+            border: none;
+            border-radius: 6px;
+            background: var(--bubble-me-bg);
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: auto;
+            width: 100%;
+            padding: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+
+        .controls label {
+            flex: 1 1 120px;
+            display: flex;
+            flex-direction: column;
+            font-size: 0.9rem;
+        }
+
+        .controls input {
+            padding: 0.4rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: var(--bubble-bg);
+            color: var(--text);
+        }
+
+        .controls button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        #connect {
+            background: #22c55e;
+            color: white;
+        }
+
+        #disconnect {
+            background: #ef4444;
+            color: white;
+        }
+
+        #status {
+            margin-left: auto;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .chat-box {
+            flex: 1;
+            background: var(--bubble-bg);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-message {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .chat-message .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #4f46e5;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .chat-message .bubble {
+            background: var(--bubble-bg);
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            max-width: 70%;
+            color: var(--text);
+        }
+
+        .chat-message.me {
+            flex-direction: row-reverse;
+        }
+
+        .chat-message.me .bubble {
+            background: var(--bubble-me-bg);
+            color: white;
+        }
+
+        .bubble .meta {
+            font-size: 0.7rem;
+            color: var(--meta-text);
+            margin-bottom: 0.2rem;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.6rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: var(--bubble-bg);
+            color: var(--text);
+        }
+
+        .chat-input button {
+            background: #4f46e5;
+            color: white;
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        @media (max-width: 600px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            #status {
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+            .chat-message .bubble {
+                max-width: 85%;
+            }
+        }
+    </style>
 </head>
 <body>
-<h3>Simple Chat Client</h3>
-<label>Room: <input id="room" value="lobby"></label>
-<label>Username: <input id="username" value="guest"></label>
-<button id="connect">Connect</button>
-<button id="disconnect" disabled>Disconnect</button>
-<div id="status"></div>
-<ul id="messages"></ul>
+<header>
+    Real-Time Chat
+    <button id="toggle-theme">🌙</button>
+</header>
+<main>
+    <div class="controls">
+        <label>Room
+            <input id="room" value="lobby">
+        </label>
+        <label>Username
+            <input id="username" value="guest">
+        </label>
+        <button id="connect">Connect</button>
+        <button id="disconnect" disabled>Disconnect</button>
+        <div id="status">Disconnected</div>
+    </div>
 
-<input id="msg" placeholder="Type a message..." style="width:60%">
-<button id="send" disabled>Send</button>
+    <div id="messages" class="chat-box"></div>
+
+    <div class="chat-input">
+        <input id="msg" placeholder="Type a message..." disabled>
+        <button id="send" disabled>Send</button>
+    </div>
+</main>
 
 <script>
     let ws = null;
@@ -23,39 +246,81 @@
     const connectBtn = document.getElementById("connect");
     const disconnectBtn = document.getElementById("disconnect");
     const sendBtn = document.getElementById("send");
+    const inputMsg = document.getElementById("msg");
+    const usernameInput = document.getElementById("username");
+    const toggleTheme = document.getElementById("toggle-theme");
 
-    function addMessage(text) {
-        const li = document.createElement("li");
-        li.textContent = text;
-        messages.appendChild(li);
+    // 🌙 Dark mode toggle
+    toggleTheme.onclick = () => {
+        document.body.classList.toggle("dark");
+        toggleTheme.textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
+    };
+
+    function createAvatar(username) {
+        return username ? username.charAt(0).toUpperCase() : "?";
+    }
+
+    function randomColor(username) {
+        const colors = ["#4f46e5", "#22c55e", "#ef4444", "#f59e0b", "#0ea5e9"];
+        let sum = 0;
+        for (let i = 0; i < username.length; i++) sum += username.charCodeAt(i);
+        return colors[sum % colors.length];
+    }
+
+    function addMessage(username, text, sender="other", time="") {
+        const div = document.createElement("div");
+        div.className = "chat-message " + (sender === "me" ? "me" : "");
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = createAvatar(username);
+        avatar.style.background = randomColor(username);
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.innerHTML = `<div class="meta">${username} • ${time}</div><div>${text}</div>`;
+
+        div.appendChild(avatar);
+        div.appendChild(bubble);
+
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
     }
 
     connectBtn.onclick = () => {
         const room = document.getElementById("room").value || "lobby";
-        const username = encodeURIComponent(document.getElementById("username").value || "guest");
+        const username = encodeURIComponent(usernameInput.value || "guest");
         const url = `ws://${location.host}/ws/${room}?username=${username}`;
         ws = new WebSocket(url);
+
         ws.onopen = () => {
             status.textContent = "Connected";
             connectBtn.disabled = true;
             disconnectBtn.disabled = false;
             sendBtn.disabled = false;
+            inputMsg.disabled = false;
         };
+
         ws.onmessage = (evt) => {
             try {
                 const obj = JSON.parse(evt.data);
                 const time = obj.timestamp ? new Date(obj.timestamp).toLocaleTimeString() : "";
-                addMessage(`[${time}] ${obj.username}: ${obj.content}`);
+                addMessage(obj.username, obj.content,
+                    obj.username === usernameInput.value ? "me" : "other",
+                    time);
             } catch (e) {
-                addMessage(evt.data);
+                addMessage("Server", evt.data);
             }
         };
+
         ws.onclose = () => {
             status.textContent = "Disconnected";
             connectBtn.disabled = false;
             disconnectBtn.disabled = true;
             sendBtn.disabled = true;
+            inputMsg.disabled = true;
         };
+
         ws.onerror = (e) => {
             console.error("WebSocket error", e);
         };
@@ -65,15 +330,17 @@
         if (ws) ws.close();
     };
 
-    document.getElementById("send").onclick = () => {
-        const input = document.getElementById("msg");
-        const text = input.value;
+    sendBtn.onclick = () => {
+        const text = inputMsg.value;
         if (ws && text) {
-            // send as JSON
             ws.send(JSON.stringify({ content: text }));
-            input.value = "";
+            inputMsg.value = "";
         }
     };
+
+    inputMsg.addEventListener("keyup", (e) => {
+        if (e.key === "Enter") sendBtn.click();
+    });
 </script>
 </body>
 </html>
