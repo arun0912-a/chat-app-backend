@@ -40,4 +40,9 @@ class ConnectionManager:
         convert to JSON string once for efficiency
         """
         text = json.dumps(message)
+        async with self._lock:
+            conns = list(self.active_connections.get(room, set()))
+        if not conns:
+            return
+        await asyncio.gather(*(conn.send_text(text) for conn in conns))
 
