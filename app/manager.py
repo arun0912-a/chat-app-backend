@@ -1,48 +1,38 @@
-from typing import Dict, Set
-from fastapi import WebSocket
-import asyncio
 import json
+from fastapi import WebSocket
+from typing import Dict, List
+from app.schemas import ChatMessage
 
 
 class ConnectionManager:
-    """
-    Manage websocket, connection and broadcasting.
-    Using asyncio.Lock for concurrency safety when modifying the connection set
-    """
-
     def __init__(self):
-        self.active_connections: Dict[str, set[WebSocket]] = {}
-        self._lock = asyncio.Lock()
+        # Store connections grouped by room
+        self.active_connections: Dict[str, List[WebSocket]] = {}
 
     async def connect(self, room: str, websocket: WebSocket):
-        """
-        Accept the websocket and add to the room set.
-        Using a lock ensures that adding/removing connections is safe under concurrency
-        """
         await websocket.accept()
-        async with self._lock:
-            if room not in self.active_connections:
-                self.active_connections[room] = set()
-            self.active_connections[room].add(websocket)
+        if room not in self.active_connections:
+            self.active_connections[room] = []
+        self.active_connections[room].append(websocket)
 
     async def disconnect(self, room: str, websocket: WebSocket):
-        async with self._lock:
-            conns = self.active_connections.get(room)
-            if conns and websocket in conns:
-                conns.remove(websocket)
-                if not conns:
-                    # remove empty rooms to keep structure tidy
-                    del self.active_connections[room]
+        if room in self.active_connections:
+            self.active_connections[room].remove(websocket)
+            if not self.active_connections[room]:
+                del self.active_connections[room]
 
-    async def broadcast(self, room: str, message: dict):
+    async def broadcast(self, room: str, message: ChatMessage):
         """
-        Broadcast a message dict to every web socket in that room.
-        convert to JSON string once for efficiency
+        Broadcast a ChatMessage object to all clients in the room.
         """
-        text = json.dumps(message)
-        async with self._lock:
-            conns = list(self.active_connections.get(room, set()))
-        if not conns:
+        if room not in self.active_connections:
             return
-        await asyncio.gather(*(conn.send_text(text) for conn in conns))
 
+        # Use Pydantic's JSON serialization (handles datetime automatically)
+        text = message.model_dump_json()
+
+        for ws in list(self.active_connections[room]):
+            try:
+                await ws.send_text(text)
+            except Exception:
+                await self.disconnect(room, ws)
