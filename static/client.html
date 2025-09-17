@@ -24,7 +24,13 @@
             --bubble-me-bg: #2563eb;
             --meta-text: #9ca3af;
         }
-
+        .system-message {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--meta-text);
+            margin: 0.5rem 0;
+            font-style: italic;
+        }
         body {
             font-family: "Segoe UI", Roboto, sans-serif;
             margin: 0;
@@ -305,13 +311,26 @@
             try {
                 const obj = JSON.parse(evt.data);
                 const time = obj.timestamp ? new Date(obj.timestamp).toLocaleTimeString() : "";
-                addMessage(obj.username, obj.content,
-                    obj.username === usernameInput.value ? "me" : "other",
-                    time);
+
+                if (obj.type === "system") {
+                    const div = document.createElement("div");
+                    div.className = "system-message";
+                    div.textContent = `[${time}] ${obj.content}`;
+                    messages.appendChild(div);
+                    messages.scrollTop = messages.scrollHeight;
+                } else if (obj.type === "chat") {
+                    addMessage(
+                        obj.username,
+                        obj.content,
+                        obj.username === usernameInput.value ? "me" : "other",
+                        time
+                    );
+                }
             } catch (e) {
                 addMessage("Server", evt.data);
             }
         };
+
 
         ws.onclose = () => {
             status.textContent = "Disconnected";
