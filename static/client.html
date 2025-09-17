@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Chat Client</title>
+</head>
+<body>
+<h3>Simple Chat Client</h3>
+<label>Room: <input id="room" value="lobby"></label>
+<label>Username: <input id="username" value="guest"></label>
+<button id="connect">Connect</button>
+<button id="disconnect" disabled>Disconnect</button>
+<div id="status"></div>
+<ul id="messages"></ul>
+
+<input id="msg" placeholder="Type a message..." style="width:60%">
+<button id="send" disabled>Send</button>
+
+<script>
+    let ws = null;
+    const status = document.getElementById("status");
+    const messages = document.getElementById("messages");
+    const connectBtn = document.getElementById("connect");
+    const disconnectBtn = document.getElementById("disconnect");
+    const sendBtn = document.getElementById("send");
+
+    function addMessage(text) {
+        const li = document.createElement("li");
+        li.textContent = text;
+        messages.appendChild(li);
+    }
+
+    connectBtn.onclick = () => {
+        const room = document.getElementById("room").value || "lobby";
+        const username = encodeURIComponent(document.getElementById("username").value || "guest");
+        const url = `ws://${location.host}/ws/${room}?username=${username}`;
+        ws = new WebSocket(url);
+        ws.onopen = () => {
+            status.textContent = "Connected";
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+            sendBtn.disabled = false;
+        };
+        ws.onmessage = (evt) => {
+            try {
+                const obj = JSON.parse(evt.data);
+                const time = obj.timestamp ? new Date(obj.timestamp).toLocaleTimeString() : "";
+                addMessage(`[${time}] ${obj.username}: ${obj.content}`);
+            } catch (e) {
+                addMessage(evt.data);
+            }
+        };
+        ws.onclose = () => {
+            status.textContent = "Disconnected";
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+            sendBtn.disabled = true;
+        };
+        ws.onerror = (e) => {
+            console.error("WebSocket error", e);
+        };
+    };
+
+    disconnectBtn.onclick = () => {
+        if (ws) ws.close();
+    };
+
+    document.getElementById("send").onclick = () => {
+        const input = document.getElementById("msg");
+        const text = input.value;
+        if (ws && text) {
+            // send as JSON
+            ws.send(JSON.stringify({ content: text }));
+            input.value = "";
+        }
+    };
+</script>
+</body>
+</html>
