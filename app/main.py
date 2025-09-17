@@ -1,13 +1,10 @@
-import os.path
-
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
-from fastapi.responses import FileResponse
 from fastapi.responses import HTMLResponse
 from typing import Optional
 from app.manager import ConnectionManager
 from app.schemas import ChatMessage
 from datetime import datetime
-import asyncio
+import json
 
 app = FastAPI()
 manager = ConnectionManager()
@@ -15,29 +12,28 @@ manager = ConnectionManager()
 
 @app.get("/")
 async def root():
-    return FileResponse(os.path.join("static", "client.html"))
+    # Serve client.html from static folder
+    html = open("static/client.html", "r", encoding="utf-8").read()
+    return HTMLResponse(html)
 
 
 @app.websocket("/ws/{room}")
-async def websocket_endpoint(websocket: WebSocket, room: str, username: Optional[str] = Query("anonymous")):
+async def websocket_endpoint(websocket: WebSocket, room: str, username: Optional[str] = Query("guest")):
     """
-    Websocket endpoint:
-    - client connect to /ws/{room}?username=Alice
-    - server receives JSON messages from client, broadcast to room
-    - server sends JSON messages to clients
+    WebSocket endpoint:
+    - Clients connect to /ws/{room}?username=Alice
+    - Server receives JSON messages, broadcasts to room
+    - Server sends JSON messages to all clients
     """
-    await manager.connect(room, websocket)
-    join_msg = ChatMessage(type="join", username=username, content=f"{username} joined", timestamp=datetime.utcnow())
-    # broadcast join message (non-blocking)
-    await manager.broadcast(room, join_msg)
+    await manager.connect(room, websocket, username)
+
     try:
         while True:
-            # wait for text message, this is async and non-blocking
+            # wait for text message
             text = await websocket.receive_text()
-            # Try to parse as JSON or treat as raw text
-            # For simplicity we expect client sends JSON like {"content": "Hello"}
+
+            # Parse JSON payload or fallback to raw text
             try:
-                import json
                 payload = json.loads(text)
                 content = payload.get("content", "")
             except Exception:
@@ -50,16 +46,19 @@ async def websocket_endpoint(websocket: WebSocket, room: str, username: Optional
                 timestamp=datetime.utcnow()
             )
 
-            # Broadcast to everyone in the room concurrently
+            # Broadcast message to everyone in the room
             await manager.broadcast(room, msg)
+
     except WebSocketDisconnect:
-        # cleanup
-        await manager.disconnect(room, websocket)
-        leave_msg = ChatMessage(type="leave", username=username, content=f"{username} left", timestamp=datetime.utcnow())
-        await manager.broadcast(room, leave_msg)
+        await manager.disconnect(room, websocket, username)
+
     except Exception as exc:
-        # log and disconnect for any expected error
-        await manager.disconnect(room, websocket)
-        # optionally broadcast an error message
-        err = ChatMessage(type="error", username="server", content=str(exc), timestamp=datetime.utcnow())
+        # handle unexpected errors
+        await manager.disconnect(room, websocket, username)
+        err = ChatMessage(
+            type="error",
+            username="server",
+            content=str(exc),
+            timestamp=datetime.utcnow()
+        )
         await manager.broadcast(room, err)
