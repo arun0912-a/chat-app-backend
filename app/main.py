@@ -40,7 +40,7 @@ async def websocket_endpoint(websocket: WebSocket, room: str, username: Optional
                 content = text
 
             msg = ChatMessage(
-                type="message",
+                type="chat",
                 username=username,
                 content=content,
                 timestamp=datetime.utcnow()
