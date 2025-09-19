@@ -243,17 +243,23 @@
     connectBtn.onclick = () => {
         const room = document.getElementById("room").value || "lobby";
         const username = encodeURIComponent(usernameInput.value || "guest");
-        const url = `ws://${location.host}/ws/${room}?username=${username}`;
+
+        // 🔑 auto-pick wss:// if site is https://
+        const protocol = location.protocol === "https:" ? "wss://" : "ws://";
+        const url = `${protocol}${location.host}/ws/${room}?username=${username}`;
+
         ws = new WebSocket(url);
 
         ws.onopen = () => {
-            status.textContent = `Connected to ${room} as ${usernameInput.value}`;
+            status.textContent = `✅ Connected to ${room} as ${usernameInput.value}`;
             connectBtn.disabled = true;
             disconnectBtn.disabled = false;
             sendBtn.disabled = false;
         };
+    };
 
-        ws.onmessage = (evt) => {
+
+    ws.onmessage = (evt) => {
             try {
                 const obj = JSON.parse(evt.data);
                 const time = obj.timestamp ? new Date(obj.timestamp).toLocaleTimeString() : "";
